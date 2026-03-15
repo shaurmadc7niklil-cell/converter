@@ -570,6 +570,11 @@
             box-shadow: none !important;
         }
 
+        .btn-small {
+            padding: 10px 20px !important;
+            font-size: 0.9rem !important;
+        }
+
         /* Прогресс-бар */
         .progress-bar {
             width: 100%;
@@ -789,12 +794,6 @@
             border-top: 1px solid rgba(255,255,255,0.1);
         }
 
-        .history-item-footer button {
-            padding: 10px 20px;
-            font-size: 0.9rem;
-            border-radius: 40px;
-        }
-
         .history-empty {
             text-align: center;
             padding: 80px 20px;
@@ -853,6 +852,32 @@
         .toast i {
             margin-right: 10px;
             font-size: 1.2rem;
+        }
+
+        /* Плавающая кнопка */
+        .floating-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #818cf8, #a78bfa);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(129, 140, 248, 0.4);
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .floating-btn:hover {
+            transform: scale(1.1) rotate(360deg);
+            box-shadow: 0 20px 35px rgba(129, 140, 248, 0.6);
         }
 
         /* Адаптивность */
@@ -928,7 +953,7 @@
             </div>
         </div>
 
-        <!-- Вкладки (только 2) -->
+        <!-- Вкладки -->
         <div class="tabs">
             <div class="tab active" data-tab="converter">
                 <i class="fas fa-arrows-spin"></i>
@@ -1039,15 +1064,15 @@
                     <div class="control-group">
                         <label><i class="fas fa-compress"></i> Сжатие:</label>
                         <div class="slider-container">
-                            <input type="range" id="compressLevel" min="0" max="100" value="80">
+                            <input type="range" id="compressLevel" min="0" max="100" value="0">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span style="color: #a0aec0;">Минимальное</span>
-                                <span class="quality-value" id="compressValue">80%</span>
-                                <span style="color: #a0aec0;">Максимальное</span>
+                                <span style="color: #a0aec0;">Без сжатия</span>
+                                <span class="quality-value" id="compressValue">0%</span>
+                                <span style="color: #a0aec0;">Макс сжатие</span>
                             </div>
                         </div>
                         <div style="margin-top: 10px; font-size: 0.9rem; color: #818cf8;" id="compressionInfo">
-                            ⚡ JPEG/WEBP: сжатие | PNG: без потерь
+                            ⚡ 0% = без сжатия, 100% = макс сжатие
                         </div>
                     </div>
 
@@ -1141,38 +1166,6 @@
     <button class="floating-btn" onclick="scrollToTop()">
         <i class="fas fa-arrow-up"></i>
     </button>
-
-    <style>
-        .floating-btn {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #818cf8, #a78bfa);
-            color: #fff;
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 10px 25px rgba(129, 140, 248, 0.4);
-            font-size: 1.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s;
-            z-index: 1000;
-        }
-
-        .floating-btn:hover {
-            transform: scale(1.1) rotate(360deg);
-            box-shadow: 0 20px 35px rgba(129, 140, 248, 0.6);
-        }
-
-        .btn-small {
-            padding: 10px 20px !important;
-            font-size: 0.9rem !important;
-        }
-    </style>
 
     <script>
         // Глобальные переменные
@@ -1350,10 +1343,15 @@
 
         function updateCompressionInfo() {
             const targetFormat = document.getElementById('targetFormat').value;
+            const compressValue = document.getElementById('compressLevel').value;
             const info = document.getElementById('compressionInfo');
             
             if (compressionSupport[targetFormat] === 'lossy') {
-                info.innerHTML = '⚡ Поддерживается сжатие с потерей качества (JPEG/WEBP)';
+                if (compressValue == 0) {
+                    info.innerHTML = '📷 0% = без сжатия (оригинальное качество)';
+                } else {
+                    info.innerHTML = `⚡ Сжатие: ${compressValue}% (качество ${Math.round(1 - (compressValue / 100 * 0.9) * 100)}%)`;
+                }
                 info.style.color = '#10b981';
             } else if (compressionSupport[targetFormat] === 'lossless') {
                 info.innerHTML = '🔷 Сжатие без потерь (PNG/GIF) - качество сохраняется';
@@ -1470,7 +1468,11 @@
             
             processedFiles = [];
             const targetFormat = document.getElementById('targetFormat').value;
-            const compressLevel = document.getElementById('compressLevel').value / 100;
+            const compressValue = document.getElementById('compressLevel').value;
+            
+            // ИНВЕРТИРУЕМ ЗНАЧЕНИЕ: 0% -> 1.0, 100% -> 0.1
+            const quality = 1 - (compressValue / 100 * 0.9);
+            
             const width = document.getElementById('widthInput').value;
             const height = document.getElementById('heightInput').value;
 
@@ -1484,7 +1486,7 @@
                     let processedFile;
                     
                     if (currentCategory === 'images') {
-                        processedFile = await processImage(file, targetFormat, compressLevel, width, height);
+                        processedFile = await processImage(file, targetFormat, quality, width, height);
                     } else {
                         processedFile = await processGeneric(file, targetFormat);
                     }
@@ -1493,7 +1495,7 @@
                     
                     saveToHistory(file, processedFile, currentCategory, {
                         targetFormat,
-                        compressLevel,
+                        compressValue,
                         width,
                         height
                     });
@@ -1547,6 +1549,7 @@
                         
                         const mimeType = mimeTypes[targetFormat] || 'image/jpeg';
                         
+                        // Для PNG и GIF качество игнорируется
                         const useQuality = (targetFormat === 'jpg' || targetFormat === 'jpeg' || targetFormat === 'webp') ? quality : 1;
                         
                         canvas.toBlob((blob) => {
