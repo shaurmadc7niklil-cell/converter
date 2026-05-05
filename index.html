@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Конвертер файлов - Полная версия</title>
+    <title>Конвертер файлов</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
@@ -12,6 +12,7 @@
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -202,7 +203,7 @@
             border-radius: 10px;
             padding: 10px;
         }
-        .preview-content img, .preview-content video, .preview-content audio { max-width: 100%; max-height: 100px; border-radius: 6px; }
+        .preview-content img, .preview-content audio { max-width: 100%; max-height: 100px; border-radius: 6px; }
         .history-panel {
             background: rgba(20,20,50,0.95);
             backdrop-filter: blur(10px);
@@ -360,11 +361,6 @@
                     <div class="category-title">Аудио</div>
                     <div class="category-formats"><span class="format-tag">MP3</span><span class="format-tag">WAV</span><span class="format-tag">OGG</span><span class="format-tag">AAC</span><span class="format-tag">FLAC</span></div>
                 </div>
-                <div class="category-card" data-category="video">
-                    <div class="category-icon"><i class="fas fa-video"></i></div>
-                    <div class="category-title">Видео</div>
-                    <div class="category-formats"><span class="format-tag">MP4</span><span class="format-tag">AVI</span><span class="format-tag">MOV</span><span class="format-tag">MKV</span><span class="format-tag">WEBM</span></div>
-                </div>
                 <div class="category-card" data-category="archives">
                     <div class="category-icon"><i class="fas fa-file-archive"></i></div>
                     <div class="category-title">Архивы</div>
@@ -387,14 +383,17 @@
                         <select id="targetFormat"></select>
                     </div>
                     <div class="control-group">
-                        <label><i class="fas fa-compress"></i> Качество (для аудио/видео):</label>
+                        <label><i class="fas fa-compress"></i> Качество сжатия:</label>
                         <div class="slider-container">
                             <input type="range" id="compressLevel" min="0" max="100" value="0">
                             <div style="display: flex; justify-content: space-between; margin-top: 5px;">
-                                <span style="font-size: 0.7rem;">Низкое</span>
+                                <span style="font-size: 0.7rem;">Без сжатия</span>
                                 <span class="quality-value" id="compressValue">0%</span>
-                                <span style="font-size: 0.7rem;">Высокое</span>
+                                <span style="font-size: 0.7rem;">Макс сжатие</span>
                             </div>
+                        </div>
+                        <div style="margin-top: 8px; font-size: 0.7rem; color: #a0aec0;">
+                            <i class="fas fa-info-circle"></i> Для JPEG/WEBP — сжатие с потерями, для PNG/GIF — без потерь
                         </div>
                     </div>
                     <div class="control-group">
@@ -425,7 +424,7 @@
                 <div class="history-header">
                     <div class="history-title"><h2><i class="fas fa-history"></i> История</h2><span class="history-stats" id="historyStats">0 записей</span></div>
                     <div class="history-filters">
-                        <select id="historyCategoryFilter"><option value="all">Все</option><option value="images">Изображения</option><option value="documents">Документы</option><option value="audio">Аудио</option><option value="video">Видео</option><option value="archives">Архивы</option></select>
+                        <select id="historyCategoryFilter"><option value="all">Все</option><option value="images">Изображения</option><option value="documents">Документы</option><option value="audio">Аудио</option><option value="archives">Архивы</option></select>
                         <input type="text" id="historySearch" placeholder="Поиск...">
                         <button class="btn-small" id="clearHistoryBtn"><i class="fas fa-trash"></i> Очистить</button>
                         <button class="btn-small" id="exportHistoryBtn"><i class="fas fa-download"></i> Экспорт</button>
@@ -439,6 +438,8 @@
     <button class="floating-btn" onclick="scrollToTop()"><i class="fas fa-arrow-up"></i></button>
 
     <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+        
         let files = [];
         let processedFiles = [];
         let currentCategory = 'images';
@@ -453,8 +454,7 @@
         const formats = {
             images: { input: ['jpg','jpeg','png','gif','bmp','webp'], output: ['jpg','png','webp','gif','bmp'] },
             documents: { input: ['txt','pdf','docx','xlsx','xls'], output: ['txt','pdf','docx','csv'] },
-            audio: { input: ['mp3','wav','ogg','aac','flac','m4a'], output: ['mp3','wav','ogg','aac'] },
-            video: { input: ['mp4','avi','mov','mkv','webm'], output: ['mp4','avi','mov','mkv','webm'] },
+            audio: { input: ['mp3','wav','ogg','aac','flac','m4a'], output: ['wav'] },
             archives: { input: ['zip','rar','7z'], output: ['zip'] }
         };
 
@@ -462,7 +462,6 @@
             'jpg':'image/jpeg','png':'image/png','webp':'image/webp','gif':'image/gif','bmp':'image/bmp',
             'txt':'text/plain','pdf':'application/pdf','docx':'application/vnd.openxmlformats-officedocument.wordprocessingml.document','csv':'text/csv',
             'mp3':'audio/mpeg','wav':'audio/wav','ogg':'audio/ogg','aac':'audio/aac','flac':'audio/flac',
-            'mp4':'video/mp4','avi':'video/x-msvideo','mov':'video/quicktime','mkv':'video/x-matroska','webm':'video/webm',
             'zip':'application/zip'
         };
 
@@ -554,7 +553,6 @@
             const icons = { 
                 'jpg':'fa-image','png':'fa-image','webp':'fa-image','gif':'fa-image',
                 'mp3':'fa-music','wav':'fa-music','ogg':'fa-music','aac':'fa-music','flac':'fa-music',
-                'mp4':'fa-video','avi':'fa-video','mov':'fa-video','mkv':'fa-video',
                 'pdf':'fa-file-pdf','docx':'fa-file-word','xlsx':'fa-file-excel',
                 'zip':'fa-file-archive','rar':'fa-file-archive','7z':'fa-file-archive'
             };
@@ -579,8 +577,7 @@
                 document.getElementById('progressFill').style.width = `${((i+1)/files.length)*100}%`;
                 let result;
                 if (currentCategory === 'images') result = await convertImage(files[i], target, quality, width, height);
-                else if (currentCategory === 'audio') result = await convertAudio(files[i], target, quality);
-                else if (currentCategory === 'video') result = await convertVideo(files[i], target);
+                else if (currentCategory === 'audio') result = await convertAudio(files[i], target);
                 else if (currentCategory === 'documents') result = await convertDocument(files[i], target);
                 else if (currentCategory === 'archives') result = await convertArchive(files[i], target);
                 else result = files[i];
@@ -617,24 +614,14 @@
             });
         }
 
-        // 🎵 ПОЛНАЯ АУДИО КОНВЕРТАЦИЯ через Web Audio API
-        async function convertAudio(file, target, quality) {
+        async function convertAudio(file, target) {
             return new Promise(async (resolve) => {
                 try {
                     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
                     const arrayBuffer = await file.arrayBuffer();
                     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-                    
-                    // Конвертируем в WAV (базовый формат)
                     const wavBlob = await audioBufferToWav(audioBuffer);
-                    
-                    if (target === 'wav') {
-                        resolve(new File([wavBlob], file.name.replace(/\.[^/.]+$/, '') + '.wav', { type: 'audio/wav' }));
-                    } else {
-                        // Для MP3, OGG, AAC нужно использовать дополнительные библиотеки
-                        // Пока возвращаем WAV как fallback
-                        resolve(new File([wavBlob], file.name.replace(/\.[^/.]+$/, '') + '.' + target, { type: mimeTypes[target] || 'audio/wav' }));
-                    }
+                    resolve(new File([wavBlob], file.name.replace(/\.[^/.]+$/, '') + '.wav', { type: 'audio/wav' }));
                     audioContext.close();
                 } catch(e) {
                     console.error('Audio conversion error:', e);
@@ -648,23 +635,17 @@
             const sampleRate = buffer.sampleRate;
             const format = 1;
             const bitDepth = 16;
-            
             const bytesPerSample = bitDepth / 8;
             const blockAlign = numChannels * bytesPerSample;
-            
             const samples = buffer.getChannelData(0);
             const dataLength = samples.length * bytesPerSample;
             const bufferLength = 44 + dataLength;
-            
             const arrayBuffer = new ArrayBuffer(bufferLength);
             const view = new DataView(arrayBuffer);
             
-            // RIFF chunk
             writeString(view, 0, 'RIFF');
             view.setUint32(4, bufferLength - 8, true);
             writeString(view, 8, 'WAVE');
-            
-            // fmt chunk
             writeString(view, 12, 'fmt ');
             view.setUint32(16, 16, true);
             view.setUint16(20, format, true);
@@ -673,19 +654,15 @@
             view.setUint32(28, sampleRate * blockAlign, true);
             view.setUint16(32, blockAlign, true);
             view.setUint16(34, bitDepth, true);
-            
-            // data chunk
             writeString(view, 36, 'data');
             view.setUint32(40, dataLength, true);
             
-            // Write samples
             let offset = 44;
             for (let i = 0; i < samples.length; i++) {
                 const sample = Math.max(-1, Math.min(1, samples[i]));
                 view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
                 offset += 2;
             }
-            
             return new Blob([view], { type: 'audio/wav' });
         }
         
@@ -693,27 +670,6 @@
             for (let i = 0; i < string.length; i++) {
                 view.setUint8(offset + i, string.charCodeAt(i));
             }
-        }
-
-        async function convertVideo(file, target) {
-            return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const video = document.createElement('video');
-                    video.onloadedmetadata = () => {
-                        const canvas = document.createElement('canvas');
-                        canvas.width = video.videoWidth;
-                        canvas.height = video.videoHeight;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                        canvas.toBlob(blob => {
-                            resolve(new File([blob], file.name.replace(/\.[^/.]+$/, '') + '.' + target, { type: mimeTypes[target] || 'video/mp4' }));
-                        }, 'video/mp4');
-                    };
-                    video.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            });
         }
 
         async function convertDocument(file, target) {
@@ -747,19 +703,24 @@
         }
 
         async function extractPDFText(file) {
-            return new Promise((resolve) => {
+            return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onload = async (e) => {
-                    const typedarray = new Uint8Array(e.target.result);
-                    const pdf = await pdfjsLib.getDocument(typedarray).promise;
-                    let text = '';
-                    for (let i = 1; i <= Math.min(pdf.numPages, 5); i++) {
-                        const page = await pdf.getPage(i);
-                        const content = await page.getTextContent();
-                        text += content.items.map(item => item.str).join(' ') + '\n';
+                    try {
+                        const typedarray = new Uint8Array(e.target.result);
+                        const pdf = await pdfjsLib.getDocument(typedarray).promise;
+                        let text = '';
+                        for (let i = 1; i <= Math.min(pdf.numPages, 5); i++) {
+                            const page = await pdf.getPage(i);
+                            const content = await page.getTextContent();
+                            text += content.items.map(item => item.str).join(' ') + '\n';
+                        }
+                        resolve(text.substring(0, 5000));
+                    } catch (err) {
+                        reject('Ошибка');
                     }
-                    resolve(text.substring(0, 5000));
                 };
+                reader.onerror = () => reject('Ошибка');
                 reader.readAsArrayBuffer(file);
             });
         }
@@ -816,7 +777,7 @@
         }
 
         function getCategoryName(cat) {
-            const names = { 'images':'Изображение','documents':'Документ','audio':'Аудио','video':'Видео','archives':'Архив' };
+            const names = { 'images':'Изображение','documents':'Документ','audio':'Аудио','archives':'Архив' };
             return names[cat] || cat;
         }
 
@@ -830,12 +791,12 @@
             document.querySelectorAll('.category-card').forEach(c => { c.classList.remove('active'); if(c.dataset.category === item.category) c.classList.add('active'); });
             currentCategory = item.category;
             updateFormatSelectors();
-            const content = `Демо: ${item.original.name}\nРазмер: ${(item.original.size/1024).toFixed(2)} KB`;
+            const content = `Информация о файле: ${item.original.name}\nРазмер: ${(item.original.size/1024).toFixed(2)} KB`;
             const blob = new Blob([content], { type: 'text/plain' });
             files = [new File([blob], item.original.name, { type: 'text/plain' })];
             updateFileList();
             document.getElementById('convertBtn').disabled = false;
-            showToast(`Загружен: ${item.original.name}`, 'success');
+            showToast(`Загружен: ${item.original.name} (только информация)`, 'info');
         };
 
         window.downloadHistoryItem = (id) => {
@@ -849,7 +810,7 @@
             a.download = item.converted.name;
             a.click();
             URL.revokeObjectURL(url);
-            showToast(`Скачано: ${item.converted.name}`, 'success');
+            showToast(`Скачано: ${item.converted.name} (только информация)`, 'info');
         };
 
         function clearHistory() {
@@ -892,9 +853,6 @@
             } else if (file.type.startsWith('audio/')) {
                 res.innerHTML = `<audio controls src="${URL.createObjectURL(file)}"></audio>`;
                 resInfo.innerHTML = `${file.name}<br>${(file.size/1024).toFixed(2)} KB`;
-            } else if (file.type.startsWith('video/')) {
-                res.innerHTML = `<video controls src="${URL.createObjectURL(file)}"></video>`;
-                resInfo.innerHTML = `${file.name}<br>${(file.size/1024).toFixed(2)} KB`;
             } else {
                 res.innerHTML = '<i class="fas fa-file fa-3x"></i>';
                 resInfo.innerHTML = `${file.name}<br>${(file.size/1024).toFixed(2)} KB`;
@@ -916,7 +874,5 @@
 
         function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';</script>
 </body>
 </html>
