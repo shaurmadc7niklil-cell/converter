@@ -266,27 +266,6 @@
         }
         .history-file { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; }
         .history-file-icon { font-size: 1.1rem; color: #818cf8; }
-        .history-item-footer {
-            display: flex;
-            justify-content: flex-end;
-            gap: 8px;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid rgba(255,255,255,0.1);
-        }
-        .history-item-footer button {
-            padding: 5px 12px;
-            border-radius: 20px;
-            border: none;
-            cursor: pointer;
-            font-size: 0.7rem;
-            font-weight: 500;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .history-item-footer button:first-child { background: linear-gradient(135deg, #818cf8, #6366f1); color: white; }
-        .history-item-footer button:last-child { background: linear-gradient(135deg, #10b981, #059669); color: white; }
         .history-empty { text-align: center; padding: 40px 20px; color: #a0aec0; }
         .toast {
             position: fixed;
@@ -761,14 +740,25 @@
             filtered.forEach(item => {
                 list.innerHTML += `
                     <div class="history-item">
-                        <div class="history-item-header"><div class="history-item-date">${new Date(item.timestamp).toLocaleString()}</div><div class="history-item-category">${getCategoryName(item.category)}</div></div>
-                        <div class="history-item-files">
-                            <div class="history-file"><i class="fas ${getIcon(item.original.name)} history-file-icon"></i><div><div>${item.original.name}</div><div>${(item.original.size/1024).toFixed(2)} KB</div></div></div>
-                            <div class="history-file"><i class="fas ${getIcon(item.converted.name)} history-file-icon"></i><div><div>${item.converted.name}</div><div>${(item.converted.size/1024).toFixed(2)} KB${item.compressionRatio>0?` (${item.compressionRatio}%)`:''}</div></div></div>
+                        <div class="history-item-header">
+                            <div class="history-item-date">${new Date(item.timestamp).toLocaleString()}</div>
+                            <div class="history-item-category">${getCategoryName(item.category)}</div>
                         </div>
-                        <div class="history-item-footer">
-                            <button onclick="loadFromHistory('${item.id}')"><i class="fas fa-rotate-left"></i> Загрузить</button>
-                            <button onclick="downloadHistoryItem('${item.id}')"><i class="fas fa-download"></i> Скачать</button>
+                        <div class="history-item-files">
+                            <div class="history-file">
+                                <i class="fas ${getIcon(item.original.name)} history-file-icon"></i>
+                                <div>
+                                    <div>${item.original.name}</div>
+                                    <div>${(item.original.size/1024).toFixed(2)} KB</div>
+                                </div>
+                            </div>
+                            <div class="history-file">
+                                <i class="fas ${getIcon(item.converted.name)} history-file-icon"></i>
+                                <div>
+                                    <div>${item.converted.name}</div>
+                                    <div>${(item.converted.size/1024).toFixed(2)} KB${item.compressionRatio>0?` (${item.compressionRatio}%)`:''}</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -780,38 +770,6 @@
             const names = { 'images':'Изображение','documents':'Документ','audio':'Аудио','archives':'Архив' };
             return names[cat] || cat;
         }
-
-        window.loadFromHistory = (id) => {
-            const item = conversionHistory.find(i => i.id === id);
-            if (!item) return;
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.querySelector('[data-tab="converter"]').classList.add('active');
-            document.getElementById('converterTab').classList.add('active');
-            document.querySelectorAll('.category-card').forEach(c => { c.classList.remove('active'); if(c.dataset.category === item.category) c.classList.add('active'); });
-            currentCategory = item.category;
-            updateFormatSelectors();
-            const content = `Информация о файле: ${item.original.name}\nРазмер: ${(item.original.size/1024).toFixed(2)} KB`;
-            const blob = new Blob([content], { type: 'text/plain' });
-            files = [new File([blob], item.original.name, { type: 'text/plain' })];
-            updateFileList();
-            document.getElementById('convertBtn').disabled = false;
-            showToast(`Загружен: ${item.original.name} (только информация)`, 'info');
-        };
-
-        window.downloadHistoryItem = (id) => {
-            const item = conversionHistory.find(i => i.id === id);
-            if (!item) return;
-            const content = `${item.converted.name}\nИсходный: ${item.original.name}\nСжатие: ${item.compressionRatio}%`;
-            const blob = new Blob([content], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = item.converted.name;
-            a.click();
-            URL.revokeObjectURL(url);
-            showToast(`Скачано: ${item.converted.name} (только информация)`, 'info');
-        };
 
         function clearHistory() {
             if (confirm('Очистить историю?')) { conversionHistory = []; localStorage.removeItem('conversionHistory'); updateHistoryList(); showToast('История очищена', 'success'); }
@@ -876,3 +834,7 @@
     </script>
 </body>
 </html>
+
+
+
+
