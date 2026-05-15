@@ -6,14 +6,13 @@
     <title>Конвертер файлов</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Библиотеки -->
+   
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-    
+   
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -144,7 +143,6 @@
             color: #fff;
             font-size: 0.9rem;
         }
-        .control-group select option { background: #1a1a4a; color: #fff; }
         .slider-container input[type="range"] {
             padding: 0;
             height: 5px;
@@ -303,12 +301,6 @@
             z-index: 1000;
         }
         .floating-btn:hover { transform: scale(1.1); }
-        @media (max-width: 768px) {
-            .preview-area, .history-item-files { grid-template-columns: 1fr; }
-            .btn { width: 100%; justify-content: center; }
-            .upload-area h3 { font-size: 1.2rem; }
-            .categories { grid-template-columns: 1fr 1fr; }
-        }
     </style>
 </head>
 <body>
@@ -317,12 +309,10 @@
             <h1>Конвертер файлов</h1>
             <div class="author-info"><i class="fas fa-user"></i> Автор проекта: Максим Масло</div>
         </div>
-
         <div class="tabs">
             <div class="tab active" data-tab="converter"><i class="fas fa-arrows-spin"></i><span>Конвертер</span></div>
             <div class="tab" data-tab="history"><i class="fas fa-history"></i><span>История</span></div>
         </div>
-
         <div class="tab-content active" id="converterTab">
             <div class="categories" id="categories">
                 <div class="category-card active" data-category="images">
@@ -346,7 +336,6 @@
                     <div class="category-formats"><span class="format-tag">ZIP</span><span class="format-tag">RAR</span><span class="format-tag">7Z</span></div>
                 </div>
             </div>
-
             <div class="converter-panel">
                 <div class="upload-area" id="uploadArea">
                     <i class="fas fa-cloud-upload-alt"></i>
@@ -355,7 +344,6 @@
                     <input type="file" id="fileInput" multiple style="display: none;" accept="*/*">
                 </div>
                 <div class="file-list" id="fileList" style="display: none;"></div>
-
                 <div class="converter-controls">
                     <div class="control-group">
                         <label><i class="fas fa-arrow-right"></i> Конвертировать в:</label>
@@ -364,15 +352,12 @@
                     <div class="control-group">
                         <label><i class="fas fa-compress"></i> Качество сжатия:</label>
                         <div class="slider-container">
-                            <input type="range" id="compressLevel" min="0" max="100" value="80">
+                            <input type="range" id="compressLevel" min="0" max="100" value="0">
                             <div style="display: flex; justify-content: space-between; margin-top: 5px;">
-                                <span style="font-size: 0.7rem;">Без сжатия</span>
-                                <span class="quality-value" id="compressValue">80%</span>
+                                <span style="font-size: 0.7rem;">Макс качество</span>
+                                <span class="quality-value" id="compressValue">0%</span>
                                 <span style="font-size: 0.7rem;">Макс сжатие</span>
                             </div>
-                        </div>
-                        <div style="margin-top: 8px; font-size: 0.7rem; color: #a0aec0;">
-                            <i class="fas fa-info-circle"></i> 0% = без сжатия (макс качество), 100% = макс сжатие
                         </div>
                     </div>
                     <div class="control-group">
@@ -383,21 +368,17 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="action-buttons">
                     <button class="btn btn-secondary" id="clearBtn"><i class="fas fa-trash"></i><span>Очистить</span></button>
                     <button class="btn btn-primary" id="convertBtn" disabled><i class="fas fa-play"></i><span>Конвертировать</span></button>
                 </div>
-
                 <div class="progress-bar" id="progressBar" style="display: none;"><div class="progress-fill" id="progressFill"></div></div>
-
                 <div class="preview-area" id="previewArea" style="display: none;">
                     <div class="preview-card"><h4><i class="fas fa-file"></i> Оригинал</h4><div class="preview-content" id="originalPreview"></div><div class="preview-info" id="originalInfo"></div></div>
                     <div class="preview-card"><h4><i class="fas fa-check-circle"></i> Результат</h4><div class="preview-content" id="resultPreview"></div><div class="preview-info" id="resultInfo"></div><button class="btn btn-success" id="downloadAllBtn" style="margin-top: 12px; width: 100%;" disabled><i class="fas fa-download"></i><span>Скачать все</span></button></div>
                 </div>
             </div>
         </div>
-
         <div class="tab-content" id="historyTab">
             <div class="history-panel">
                 <div class="history-header">
@@ -413,12 +394,11 @@
             </div>
         </div>
     </div>
-
     <button class="floating-btn" onclick="scrollToTop()"><i class="fas fa-arrow-up"></i></button>
 
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
-        
+
         let files = [];
         let processedFiles = [];
         let currentCategory = 'images';
@@ -434,14 +414,7 @@
             images: { input: ['jpg','jpeg','png','gif','bmp','webp'], output: ['jpg','png','webp','gif','bmp'] },
             documents: { input: ['txt','pdf','docx','xlsx','xls'], output: ['txt','pdf','docx','csv'] },
             audio: { input: ['mp3','wav','ogg','aac','flac','m4a'], output: ['wav'] },
-            archives: { input: ['zip','rar','7z'], output: ['zip'] }
-        };
-
-        const mimeTypes = {
-            'jpg':'image/jpeg','png':'image/png','webp':'image/webp','gif':'image/gif','bmp':'image/bmp',
-            'txt':'text/plain','pdf':'application/pdf','docx':'application/vnd.openxmlformats-officedocument.wordprocessingml.document','csv':'text/csv',
-            'mp3':'audio/mpeg','wav':'audio/wav','ogg':'audio/ogg','aac':'audio/aac','flac':'audio/flac',
-            'zip':'application/zip'
+            archives: { input: ['zip'], output: ['zip'] }
         };
 
         function detectCategoryByExtension(filename) {
@@ -453,31 +426,11 @@
             return null;
         }
 
-        function detectCategoryByMime(mimeType) {
-            if (mimeType.startsWith('image/')) return 'images';
-            if (mimeType.startsWith('audio/')) return 'audio';
-            if (mimeType === 'application/pdf') return 'documents';
-            if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return 'documents';
-            if (mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') return 'documents';
-            if (mimeType === 'text/plain') return 'documents';
-            if (mimeType === 'application/zip') return 'archives';
-            if (mimeType === 'application/x-rar-compressed') return 'archives';
-            if (mimeType === 'application/x-7z-compressed') return 'archives';
-            return null;
-        }
-
         function autoSwitchCategory(file) {
-            let category = detectCategoryByMime(file.type);
-            if (!category) category = detectCategoryByExtension(file.name);
+            let category = detectCategoryByExtension(file.name);
             if (!category) return false;
-            
             currentCategory = category;
-            document.querySelectorAll('.category-card').forEach(card => {
-                card.classList.remove('active');
-                if (card.dataset.category === category) {
-                    card.classList.add('active');
-                }
-            });
+            document.querySelectorAll('.category-card').forEach(card => card.classList.toggle('active', card.dataset.category === category));
             updateFormatSelectors();
             return true;
         }
@@ -504,34 +457,30 @@
             const uploadArea = document.getElementById('uploadArea');
             const fileInput = document.getElementById('fileInput');
             uploadArea.addEventListener('click', () => fileInput.click());
-            uploadArea.addEventListener('dragover', (e) => e.preventDefault());
-            uploadArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                addFiles(Array.from(e.dataTransfer.files));
-            });
-            fileInput.addEventListener('change', (e) => addFiles(Array.from(e.target.files)));
+            uploadArea.addEventListener('dragover', e => e.preventDefault());
+            uploadArea.addEventListener('drop', e => { e.preventDefault(); addFiles(Array.from(e.dataTransfer.files)); });
+            fileInput.addEventListener('change', e => addFiles(Array.from(e.target.files)));
 
-            document.getElementById('compressLevel').addEventListener('input', (e) => {
+            document.getElementById('compressLevel').addEventListener('input', e => {
                 document.getElementById('compressValue').textContent = e.target.value + '%';
             });
 
-            document.getElementById('clearBtn').addEventListener('click', () => { 
-                files = []; 
-                processedFiles = []; 
-                updateFileList(); 
-                document.getElementById('previewArea').style.display = 'none'; 
+            document.getElementById('clearBtn').addEventListener('click', () => {
+                files = [];
+                processedFiles = [];
+                updateFileList();
+                document.getElementById('previewArea').style.display = 'none';
                 document.getElementById('convertBtn').disabled = true;
-                document.getElementById('fileInput').value = '';
             });
-            
+
             document.getElementById('convertBtn').addEventListener('click', convertFiles);
             document.getElementById('downloadAllBtn').addEventListener('click', downloadAll);
-            
+
             document.getElementById('historyCategoryFilter').addEventListener('change', updateHistoryList);
             document.getElementById('historySearch').addEventListener('input', updateHistoryList);
             document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory);
             document.getElementById('exportHistoryBtn').addEventListener('click', exportHistory);
-            
+
             updateFormatSelectors();
             updateHistoryList();
         });
@@ -548,91 +497,83 @@
         }
 
         function addFiles(newFiles) {
-            if (newFiles.length === 0) return;
-            
-            const firstFile = newFiles[0];
-            autoSwitchCategory(firstFile);
-            
+            if (!newFiles.length) return;
+            autoSwitchCategory(newFiles[0]);
+
             const supported = formats[currentCategory].input;
             const valid = newFiles.filter(f => supported.includes(f.name.split('.').pop().toLowerCase()));
-            if (valid.length === 0) { 
-                showToast('Неподдерживаемый формат для выбранной категории', 'error'); 
-                return; 
-            }
+            if (!valid.length) return showToast('Неподдерживаемый формат', 'error');
+
             files = [...files, ...valid];
             updateFileList();
             document.getElementById('convertBtn').disabled = false;
-            showToast(`Добавлено ${valid.length} файлов`, 'success');
         }
 
         function updateFileList() {
             const list = document.getElementById('fileList');
-            if (files.length === 0) { list.style.display = 'none'; return; }
+            if (!files.length) { list.style.display = 'none'; return; }
             list.style.display = 'block';
-            list.innerHTML = '';
-            files.forEach((f, i) => {
-                list.innerHTML += `
-                    <div class="file-item">
-                        <div class="file-info"><i class="fas ${getIcon(f.name)} file-icon"></i><div><div>${f.name}</div><div class="file-size">${(f.size/1024).toFixed(2)} KB</div></div></div>
-                        <div class="file-actions"><button onclick="removeFile(${i})"><i class="fas fa-times"></i></button></div>
-                    </div>
-                `;
-            });
+            list.innerHTML = files.map((f, i) => `
+                <div class="file-item">
+                    <div class="file-info"><i class="fas ${getIcon(f.name)} file-icon"></i><div><div>${f.name}</div><div class="file-size">${(f.size/1024).toFixed(2)} KB</div></div></div>
+                    <div class="file-actions"><button onclick="removeFile(${i})"><i class="fas fa-times"></i></button></div>
+                </div>
+            `).join('');
         }
 
         function getIcon(name) {
             const ext = name.split('.').pop().toLowerCase();
-            const icons = { 
-                'jpg':'fa-image','png':'fa-image','webp':'fa-image','gif':'fa-image',
-                'mp3':'fa-music','wav':'fa-music','ogg':'fa-music','aac':'fa-music','flac':'fa-music',
-                'pdf':'fa-file-pdf','docx':'fa-file-word','xlsx':'fa-file-excel',
-                'zip':'fa-file-archive','rar':'fa-file-archive','7z':'fa-file-archive'
-            };
+            const icons = {'jpg':'fa-image','png':'fa-image','webp':'fa-image','gif':'fa-image','pdf':'fa-file-pdf','docx':'fa-file-word','xlsx':'fa-file-excel','zip':'fa-file-archive','mp3':'fa-music'};
             return icons[ext] || 'fa-file';
         }
 
-        window.removeFile = (i) => { files.splice(i,1); updateFileList(); if(files.length===0) document.getElementById('convertBtn').disabled = true; };
+        window.removeFile = (i) => { 
+            files.splice(i,1); 
+            updateFileList(); 
+            if(files.length===0) document.getElementById('convertBtn').disabled = true; 
+        };
 
         async function convertFiles() {
-            if (isProcessing || files.length === 0) return;
+            if (isProcessing || !files.length) return;
             isProcessing = true;
             document.getElementById('convertBtn').disabled = true;
             document.getElementById('progressBar').style.display = 'block';
-            document.getElementById('previewArea').style.display = 'none';
             processedFiles = [];
+
             const target = document.getElementById('targetFormat').value;
-            // ИНВЕРТИРУЕМ качество: 0% -> 1.0, 100% -> 0.1
-            const compressValue = parseInt(document.getElementById('compressLevel').value);
-            const quality = 1 - (compressValue / 100 * 0.9);
+            const compressLevel = parseInt(document.getElementById('compressLevel').value);
             const width = document.getElementById('widthInput').value;
             const height = document.getElementById('heightInput').value;
 
             for (let i = 0; i < files.length; i++) {
                 document.getElementById('progressFill').style.width = `${((i+1)/files.length)*100}%`;
-                let result;
-                if (currentCategory === 'images') result = await convertImage(files[i], target, quality, width, height);
-                else if (currentCategory === 'audio') result = await convertAudio(files[i], target);
-                else if (currentCategory === 'documents') result = await convertDocument(files[i], target);
-                else if (currentCategory === 'archives') result = await convertArchive(files[i], target);
-                else result = files[i];
-                if (result) {
-                    processedFiles.push(result);
-                    saveToHistory(files[i], result, currentCategory, { target, compressValue, width, height });
+                let result = null;
+
+                if (currentCategory === 'images') {
+                    result = await convertImage(files[i], target, compressLevel, width, height);
+                } else if (currentCategory === 'documents') {
+                    result = await convertDocument(files[i], target);
+                } else if (currentCategory === 'audio') {
+                    result = await convertAudio(files[i]);
+                } else if (currentCategory === 'archives') {
+                    result = await convertArchive(files[i]);
                 }
-                await new Promise(r => setTimeout(r, 10));
+
+                if (result) processedFiles.push(result);
+                await new Promise(r => setTimeout(r, 30));
             }
-            if (processedFiles.length > 0) { 
-                showPreview(processedFiles[0]); 
-                document.getElementById('downloadAllBtn').disabled = false; 
-                showToast(`Готово: ${processedFiles.length} файлов`, 'success'); 
-            } else {
-                document.getElementById('convertBtn').disabled = false;
+
+            if (processedFiles.length) {
+                showPreview(processedFiles[0]);
+                document.getElementById('downloadAllBtn').disabled = false;
             }
+
             document.getElementById('progressBar').style.display = 'none';
+            document.getElementById('convertBtn').disabled = false;
             isProcessing = false;
         }
 
-        async function convertImage(file, target, quality, w, h) {
+        async function convertImage(file, target, compressLevel, w, h) {
             return new Promise((resolve) => {
                 const reader = new FileReader();
                 reader.onload = (e) => {
@@ -641,14 +582,23 @@
                         const canvas = document.createElement('canvas');
                         let tw = w ? parseInt(w) : img.width;
                         let th = h ? parseInt(h) : img.height;
-                        if (w && !h) th = (img.height / img.width) * tw;
-                        if (h && !w) tw = (img.width / img.height) * th;
-                        canvas.width = tw; canvas.height = th;
+                        if (w && !h) th = Math.round((img.height / img.width) * tw);
+                        if (h && !w) tw = Math.round((img.width / img.height) * th);
+
+                        canvas.width = tw;
+                        canvas.height = th;
                         canvas.getContext('2d').drawImage(img, 0, 0, tw, th);
-                        const mime = mimeTypes[target] || 'image/jpeg';
-                        // Для JPEG и WEBP применяем качество. Для PNG/GIF качество игнорируется
-                        const useQuality = (target === 'jpg' || target === 'jpeg' || target === 'webp') ? quality : 1;
-                        canvas.toBlob(blob => resolve(new File([blob], file.name.replace(/\.[^/.]+$/, '') + '.' + target, { type: mime })), mime, useQuality);
+
+                        const mime = {'jpg':'image/jpeg','jpeg':'image/jpeg','png':'image/png','webp':'image/webp','gif':'image/gif'}[target] || 'image/jpeg';
+                        let quality = 1.0;
+
+                        if (target === 'jpg' || target === 'jpeg' || target === 'webp') {
+                            quality = Math.max(0.1, 1 - (compressLevel / 100 * 0.9));
+                        }
+
+                        canvas.toBlob(blob => {
+                            resolve(new File([blob], file.name.replace(/\.[^/.]+$/, '') + '.' + target, { type: mime }));
+                        }, mime, quality);
                     };
                     img.src = e.target.result;
                 };
@@ -656,152 +606,147 @@
             });
         }
 
-        async function convertAudio(file, target) {
-            return new Promise(async (resolve) => {
-                try {
-                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    const arrayBuffer = await file.arrayBuffer();
-                    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-                    const wavBlob = await audioBufferToWav(audioBuffer);
-                    resolve(new File([wavBlob], file.name.replace(/\.[^/.]+$/, '') + '.wav', { type: 'audio/wav' }));
-                    audioContext.close();
-                } catch(e) {
-                    console.error('Audio conversion error:', e);
-                    resolve(file);
+        async function convertDocument(file, target) {
+            const ext = file.name.split('.').pop().toLowerCase();
+            try {
+                if (target === 'pdf' && (ext === 'docx' || ext === 'txt')) {
+                    let text = ext === 'docx' 
+                        ? (await mammoth.extractRawText({arrayBuffer: await file.arrayBuffer()})).value 
+                        : await file.text();
+                    return await createPDFWithCyrillic(text, file.name);
                 }
-            });
+                if (ext === 'pdf' && target === 'txt') {
+                    const text = await extractPDFText(file);
+                    return new File([text], file.name.replace(/\.[^/.]+$/, '') + '.txt', { type: 'text/plain' });
+                }
+                if (ext === 'docx' && target === 'txt') {
+                    const result = await mammoth.extractRawText({arrayBuffer: await file.arrayBuffer()});
+                    return new File([result.value], file.name.replace(/\.[^/.]+$/, '') + '.txt', { type: 'text/plain' });
+                }
+                if ((ext === 'xlsx' || ext === 'xls') && target === 'csv') {
+                    return new Promise(resolve => {
+                        const reader = new FileReader();
+                        reader.onload = e => {
+                            const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+                            const csv = XLSX.utils.sheet_to_csv(wb.Sheets[wb.SheetNames[0]]);
+                            resolve(new File([csv], file.name.replace(/\.[^/.]+$/, '') + '.csv', {type:'text/csv'}));
+                        };
+                        reader.readAsArrayBuffer(file);
+                    });
+                }
+            } catch (e) {
+                console.error(e);
+            }
+            return null;
+        }
+
+        async function createPDFWithCyrillic(text, filename) {
+            const { PDFDocument, rgb, StandardFonts } = PDFLib;
+            const pdfDoc = await PDFDocument.create();
+            const font = await pdfDoc.embedFont(StandardFonts.Courier);
+
+            let page = pdfDoc.addPage([595, 842]);
+            let y = 780;
+            const lines = text.split('\n');
+
+            for (let line of lines) {
+                if (y < 50) {
+                    page = pdfDoc.addPage([595, 842]);
+                    y = 780;
+                }
+                if (line.trim()) {
+                    page.drawText(line, { x: 50, y: y, size: 11, font: font, color: rgb(0,0,0), maxWidth: 500 });
+                }
+                y -= 14;
+            }
+
+            const pdfBytes = await pdfDoc.save();
+            return new File([pdfBytes], filename.replace(/\.[^/.]+$/, '') + '.pdf', { type: 'application/pdf' });
+        }
+
+        async function extractPDFText(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+            let text = '';
+            for (let i = 1; i <= Math.min(pdf.numPages, 10); i++) {
+                const page = await pdf.getPage(i);
+                const content = await page.getTextContent();
+                text += content.items.map(item => item.str).join(' ') + '\n';
+            }
+            return text;
+        }
+
+        async function convertAudio(file) {
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                const wavBlob = await audioBufferToWav(audioBuffer);
+                audioContext.close();
+                return new File([wavBlob], file.name.replace(/\.[^/.]+$/, '') + '.wav', { type: 'audio/wav' });
+            } catch (e) {
+                return file;
+            }
         }
 
         function audioBufferToWav(buffer) {
             const numChannels = buffer.numberOfChannels;
             const sampleRate = buffer.sampleRate;
-            const format = 1;
-            const bitDepth = 16;
-            const bytesPerSample = bitDepth / 8;
-            const blockAlign = numChannels * bytesPerSample;
-            const samples = buffer.getChannelData(0);
-            const dataLength = samples.length * bytesPerSample;
-            const bufferLength = 44 + dataLength;
-            const arrayBuffer = new ArrayBuffer(bufferLength);
+            const length = buffer.length * numChannels * 2 + 44;
+            const arrayBuffer = new ArrayBuffer(length);
             const view = new DataView(arrayBuffer);
-            
+
             writeString(view, 0, 'RIFF');
-            view.setUint32(4, bufferLength - 8, true);
+            view.setUint32(4, length - 8, true);
             writeString(view, 8, 'WAVE');
             writeString(view, 12, 'fmt ');
             view.setUint32(16, 16, true);
-            view.setUint16(20, format, true);
+            view.setUint16(20, 1, true);
             view.setUint16(22, numChannels, true);
             view.setUint32(24, sampleRate, true);
-            view.setUint32(28, sampleRate * blockAlign, true);
-            view.setUint16(32, blockAlign, true);
-            view.setUint16(34, bitDepth, true);
+            view.setUint32(28, sampleRate * numChannels * 2, true);
+            view.setUint16(32, numChannels * 2, true);
+            view.setUint16(34, 16, true);
             writeString(view, 36, 'data');
-            view.setUint32(40, dataLength, true);
-            
+            view.setUint32(40, buffer.length * numChannels * 2, true);
+
             let offset = 44;
-            for (let i = 0; i < samples.length; i++) {
-                const sample = Math.max(-1, Math.min(1, samples[i]));
-                view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
-                offset += 2;
+            const channels = [];
+            for (let i = 0; i < numChannels; i++) channels.push(buffer.getChannelData(i));
+
+            for (let i = 0; i < buffer.length; i++) {
+                for (let ch = 0; ch < numChannels; ch++) {
+                    const sample = Math.max(-1, Math.min(1, channels[ch][i]));
+                    view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+                    offset += 2;
+                }
             }
-            return new Blob([view], { type: 'audio/wav' });
+            return new Blob([arrayBuffer], { type: 'audio/wav' });
         }
-        
+
         function writeString(view, offset, string) {
-            for (let i = 0; i < string.length; i++) {
-                view.setUint8(offset + i, string.charCodeAt(i));
-            }
+            for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i));
         }
 
-        async function convertDocument(file, target) {
-            const ext = file.name.split('.').pop().toLowerCase();
-            
-            // TXT -> PDF
-            if (ext === 'txt' && target === 'pdf') {
-                const { PDFDocument, rgb } = PDFLib;
-                const pdfDoc = await PDFDocument.create();
-                const text = await file.text();
-                const page = pdfDoc.addPage([600, 800]);
-                const truncatedText = text.substring(0, 3000);
-                page.drawText(truncatedText, { x: 50, y: 750, size: 12, color: rgb(0,0,0) });
-                const pdfBytes = await pdfDoc.save();
-                return new File([pdfBytes], file.name.replace('.txt','.pdf'), { type: 'application/pdf' });
-            }
-            
-            // PDF -> TXT
-            if (ext === 'pdf' && target === 'txt') {
-                const text = await extractPDFText(file);
-                return new File([text], file.name.replace('.pdf','.txt'), { type: 'text/plain' });
-            }
-            
-            // DOCX -> TXT
-            if (ext === 'docx' && target === 'txt') {
-                const arrayBuffer = await file.arrayBuffer();
-                const result = await mammoth.extractRawText({ arrayBuffer });
-                return new File([result.value], file.name.replace(/\.[^/.]+$/, '') + '.txt', { type: 'text/plain' });
-            }
-            
-            // XLSX -> CSV
-            if ((ext === 'xlsx' || ext === 'xls') && target === 'csv') {
-                return new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const data = new Uint8Array(e.target.result);
-                        const workbook = XLSX.read(data, { type: 'array' });
-                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                        const csv = XLSX.utils.sheet_to_csv(firstSheet);
-                        resolve(new File([csv], file.name.replace(/\.[^/.]+$/, '') + '.csv', { type: 'text/csv' }));
-                    };
-                    reader.readAsArrayBuffer(file);
-                });
-            }
-            
-            return file;
-        }
-
-        async function extractPDFText(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = async (e) => {
-                    try {
-                        const typedarray = new Uint8Array(e.target.result);
-                        const pdf = await pdfjsLib.getDocument(typedarray).promise;
-                        let text = '';
-                        for (let i = 1; i <= Math.min(pdf.numPages, 5); i++) {
-                            const page = await pdf.getPage(i);
-                            const content = await page.getTextContent();
-                            text += content.items.map(item => item.str).join(' ') + '\n';
-                        }
-                        resolve(text.substring(0, 5000));
-                    } catch (err) {
-                        reject('Ошибка');
-                    }
-                };
-                reader.onerror = () => reject('Ошибка');
-                reader.readAsArrayBuffer(file);
-            });
-        }
-
-        async function convertArchive(file, target) {
-            if (target === 'zip') {
+        async function convertArchive(file) {
+            try {
                 const zip = new JSZip();
-                const content = await file.text();
-                zip.file(file.name.replace(/\.[^/.]+$/, '') + '.txt', content);
-                const zipBlob = await zip.generateAsync({ type: 'blob' });
+                const arrayBuffer = await file.arrayBuffer();
+                zip.file(file.name, arrayBuffer);
+                const zipBlob = await zip.generateAsync({ type: "blob" });
                 return new File([zipBlob], file.name.replace(/\.[^/.]+$/, '') + '.zip', { type: 'application/zip' });
+            } catch (e) {
+                return file;
             }
-            return file;
         }
 
-        function saveToHistory(original, converted, category, settings) {
+        function saveToHistory(original, converted, category) {
             const item = {
-                id: Date.now() + Math.random().toString(36).substr(2,6),
+                id: Date.now(),
                 timestamp: new Date().toISOString(),
                 category,
-                original: { name: original.name, size: original.size, format: original.name.split('.').pop() },
-                converted: { name: converted.name, size: converted.size, format: converted.name.split('.').pop() },
-                compressionRatio: ((1 - converted.size / original.size) * 100).toFixed(1)
+                original: { name: original.name, size: original.size },
+                converted: { name: converted.name, size: converted.size }
             };
             conversionHistory.unshift(item);
             if (conversionHistory.length > 100) conversionHistory = conversionHistory.slice(0,100);
@@ -814,91 +759,55 @@
             const filter = document.getElementById('historyCategoryFilter').value;
             const search = document.getElementById('historySearch').value.toLowerCase();
             let filtered = conversionHistory.filter(i => (filter === 'all' || i.category === filter) && (!search || i.original.name.toLowerCase().includes(search)));
-            if (filtered.length === 0) { list.innerHTML = '<div class="history-empty"><i class="fas fa-history"></i><h3>История пуста</h3></div>'; return; }
-            list.innerHTML = '';
-            filtered.forEach(item => {
-                list.innerHTML += `
-                    <div class="history-item">
-                        <div class="history-item-header">
-                            <div class="history-item-date">${new Date(item.timestamp).toLocaleString()}</div>
-                            <div class="history-item-category">${getCategoryName(item.category)}</div>
-                        </div>
-                        <div class="history-item-files">
-                            <div class="history-file">
-                                <i class="fas ${getIcon(item.original.name)} history-file-icon"></i>
-                                <div>
-                                    <div>${item.original.name}</div>
-                                    <div>${(item.original.size/1024).toFixed(2)} KB</div>
-                                </div>
-                            </div>
-                            <div class="history-file">
-                                <i class="fas ${getIcon(item.converted.name)} history-file-icon"></i>
-                                <div>
-                                    <div>${item.converted.name}</div>
-                                    <div>${(item.converted.size/1024).toFixed(2)} KB${item.compressionRatio>0?` (${item.compressionRatio}%)`:''}</div>
-                                </div>
-                            </div>
-                        </div>
+            if (!filtered.length) {
+                list.innerHTML = '<div class="history-empty"><i class="fas fa-history"></i><h3>История пуста</h3></div>';
+                return;
+            }
+            list.innerHTML = filtered.map(item => `
+                <div class="history-item">
+                    <div class="history-item-header">
+                        <div class="history-item-date">${new Date(item.timestamp).toLocaleString()}</div>
+                        <div class="history-item-category">${item.category}</div>
                     </div>
-                `;
-            });
+                    <div class="history-item-files">
+                        <div class="history-file"><i class="fas ${getIcon(item.original.name)} history-file-icon"></i><div>${item.original.name}<br>${(item.original.size/1024).toFixed(2)} KB</div></div>
+                        <div class="history-file"><i class="fas ${getIcon(item.converted.name)} history-file-icon"></i><div>${item.converted.name}<br>${(item.converted.size/1024).toFixed(2)} KB</div></div>
+                    </div>
+                </div>
+            `).join('');
             document.getElementById('historyStats').textContent = `${filtered.length} записей`;
         }
 
-        function getCategoryName(cat) {
-            const names = { 'images':'Изображение','documents':'Документ','audio':'Аудио','archives':'Архив' };
-            return names[cat] || cat;
-        }
-
         function clearHistory() {
-            if (confirm('Очистить историю?')) { conversionHistory = []; localStorage.removeItem('conversionHistory'); updateHistoryList(); showToast('История очищена', 'success'); }
+            if (confirm('Очистить историю?')) {
+                conversionHistory = [];
+                localStorage.removeItem('conversionHistory');
+                updateHistoryList();
+            }
         }
 
         function exportHistory() {
             const blob = new Blob([JSON.stringify(conversionHistory, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url;
+            a.href = URL.createObjectURL(blob);
             a.download = `history_${new Date().toISOString().slice(0,10)}.json`;
             a.click();
-            URL.revokeObjectURL(url);
-            showToast('История экспортирована', 'success');
         }
 
         function showPreview(file) {
             const area = document.getElementById('previewArea');
-            const orig = document.getElementById('originalPreview');
-            const res = document.getElementById('resultPreview');
-            const origInfo = document.getElementById('originalInfo');
-            const resInfo = document.getElementById('resultInfo');
             area.style.display = 'grid';
-            
-            if (files[0]?.type.startsWith('image/')) {
-                orig.innerHTML = `<img src="${URL.createObjectURL(files[0])}">`;
-                origInfo.innerHTML = `${files[0].name}<br>${(files[0].size/1024).toFixed(2)} KB`;
-            } else if (files[0]?.type.startsWith('audio/')) {
-                orig.innerHTML = `<audio controls src="${URL.createObjectURL(files[0])}"></audio>`;
-                origInfo.innerHTML = `${files[0].name}<br>${(files[0].size/1024).toFixed(2)} KB`;
-            } else {
-                orig.innerHTML = '<i class="fas fa-file fa-3x"></i>';
-                origInfo.innerHTML = files[0]?.name || '';
-            }
-            
-            if (file.type.startsWith('image/')) {
-                res.innerHTML = `<img src="${URL.createObjectURL(file)}">`;
-                resInfo.innerHTML = `${file.name}<br>${(file.size/1024).toFixed(2)} KB<br>Сжатие: ${((1-file.size/files[0]?.size)*100).toFixed(1)}%`;
-            } else if (file.type.startsWith('audio/')) {
-                res.innerHTML = `<audio controls src="${URL.createObjectURL(file)}"></audio>`;
-                resInfo.innerHTML = `${file.name}<br>${(file.size/1024).toFixed(2)} KB`;
-            } else {
-                res.innerHTML = '<i class="fas fa-file fa-3x"></i>';
-                resInfo.innerHTML = `${file.name}<br>${(file.size/1024).toFixed(2)} KB`;
-            }
+            document.getElementById('originalPreview').innerHTML = files[0] ? `<img src="${URL.createObjectURL(files[0])}" style="max-height:120px">` : '';
+            document.getElementById('resultPreview').innerHTML = file.type.startsWith('image/') ? `<img src="${URL.createObjectURL(file)}" style="max-height:120px">` : '<i class="fas fa-file fa-3x"></i>';
         }
 
         function downloadAll() {
-            processedFiles.forEach(f => { const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; a.click(); URL.revokeObjectURL(a.href); });
-            showToast(`Скачано ${processedFiles.length} файлов`, 'success');
+            processedFiles.forEach(f => {
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(f);
+                a.download = f.name;
+                a.click();
+            });
         }
 
         function showToast(msg, type = 'info') {
