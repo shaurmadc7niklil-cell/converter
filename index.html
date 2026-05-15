@@ -444,7 +444,6 @@
             'zip':'application/zip'
         };
 
-        // Функция определения категории по расширению файла
         function detectCategoryByExtension(filename) {
             const ext = filename.split('.').pop().toLowerCase();
             if (formats.images.input.includes(ext)) return 'images';
@@ -454,7 +453,6 @@
             return null;
         }
 
-        // Функция определения категории по MIME-типу
         function detectCategoryByMime(mimeType) {
             if (mimeType.startsWith('image/')) return 'images';
             if (mimeType.startsWith('audio/')) return 'audio';
@@ -468,7 +466,6 @@
             return null;
         }
 
-        // Автоматическое переключение категории при загрузке файла
         function autoSwitchCategory(file) {
             let category = detectCategoryByMime(file.type);
             if (!category) category = detectCategoryByExtension(file.name);
@@ -625,7 +622,13 @@
                     saveToHistory(files[i], result, currentCategory, { target, quality, width, height });
                 }
             }
-            if (processedFiles.length > 0) { showPreview(processedFiles[0]); document.getElementById('downloadAllBtn').disabled = false; showToast(`Готово: ${processedFiles.length} файлов`, 'success'); }
+            if (processedFiles.length > 0) { 
+                showPreview(processedFiles[0]); 
+                document.getElementById('downloadAllBtn').disabled = false; 
+                showToast(`Готово: ${processedFiles.length} файлов`, 'success'); 
+            } else {
+                document.getElementById('convertBtn').disabled = false;
+            }
             document.getElementById('progressBar').style.display = 'none';
             isProcessing = false;
         }
@@ -713,24 +716,49 @@
 
         async function convertDocument(file, target) {
             const ext = file.name.split('.').pop().toLowerCase();
+            
+            // TXT -> PDF
             if (ext === 'txt' && target === 'pdf') {
                 const { PDFDocument, rgb } = PDFLib;
                 const pdfDoc = await PDFDocument.create();
                 const text = await file.text();
                 const page = pdfDoc.addPage([600, 800]);
-                page.drawText(text.substring(0, 2000), { x: 50, y: 750, size: 12, color: rgb(0,0,0) });
+                // Обрезаем слишком длинный текст
+                const truncatedText = text.substring(0, 3000);
+                page.drawText(truncatedText, { x: 50, y: 750, size: 12, color: rgb(0,0,0) });
                 const pdfBytes = await pdfDoc.save();
                 return new File([pdfBytes], file.name.replace('.txt','.pdf'), { type: 'application/pdf' });
             }
+            
+            // PDF -> TXT
             if (ext === 'pdf' && target === 'txt') {
                 const text = await extractPDFText(file);
                 return new File([text], file.name.replace('.pdf','.txt'), { type: 'text/plain' });
             }
-            if ((ext === 'docx' || ext === 'doc') && target === 'txt') {
+            
+            // DOCX -> TXT
+            if (ext === 'docx' && target === 'txt') {
                 const arrayBuffer = await file.arrayBuffer();
                 const result = await mammoth.extractRawText({ arrayBuffer });
                 return new File([result.value], file.name.replace(/\.[^/.]+$/, '') + '.txt', { type: 'text/plain' });
             }
+            
+            // DOCX -> PDF (используем mammoth для извлечения текста, потом создаём PDF)
+            if (ext === 'docx' && target === 'pdf') {
+                const arrayBuffer = await file.arrayBuffer();
+                const result = await mammoth.extractRawText({ arrayBuffer });
+                const text = result.value;
+                
+                const { PDFDocument, rgb } = PDFLib;
+                const pdfDoc = await PDFDocument.create();
+                const page = pdfDoc.addPage([600, 800]);
+                const truncatedText = text.substring(0, 3000);
+                page.drawText(truncatedText, { x: 50, y: 750, size: 12, color: rgb(0,0,0) });
+                const pdfBytes = await pdfDoc.save();
+                return new File([pdfBytes], file.name.replace(/\.[^/.]+$/, '') + '.pdf', { type: 'application/pdf' });
+            }
+            
+            // XLSX -> CSV
             if ((ext === 'xlsx' || ext === 'xls') && target === 'csv') {
                 const data = await file.arrayBuffer();
                 const workbook = XLSX.read(data);
@@ -738,6 +766,7 @@
                 const csv = XLSX.utils.sheet_to_csv(sheet);
                 return new File([csv], file.name.replace(/\.[^/.]+$/, '') + '.csv', { type: 'text/csv' });
             }
+            
             return file;
         }
 
