@@ -617,6 +617,7 @@
                     processedFiles.push(result);
                     saveToHistory(files[i], result, currentCategory, { target, quality, width, height });
                 }
+                await new Promise(r => setTimeout(r, 10));
             }
             if (processedFiles.length > 0) { 
                 showPreview(processedFiles[0]); 
@@ -738,37 +739,17 @@
                 return new File([result.value], file.name.replace(/\.[^/.]+$/, '') + '.txt', { type: 'text/plain' });
             }
             
-            // DOCX -> PDF
-            if (ext === 'docx' && target === 'pdf') {
-                const arrayBuffer = await file.arrayBuffer();
-                const result = await mammoth.extractRawText({ arrayBuffer });
-                const text = result.value;
-                const { PDFDocument, rgb } = PDFLib;
-                const pdfDoc = await PDFDocument.create();
-                const page = pdfDoc.addPage([600, 800]);
-                const truncatedText = text.substring(0, 3000);
-                page.drawText(truncatedText, { x: 50, y: 750, size: 12, color: rgb(0,0,0) });
-                const pdfBytes = await pdfDoc.save();
-                return new File([pdfBytes], file.name.replace(/\.[^/.]+$/, '') + '.pdf', { type: 'application/pdf' });
-            }
-            
-            // XLSX -> CSV (переписано с нуля)
+            // XLSX -> CSV
             if ((ext === 'xlsx' || ext === 'xls') && target === 'csv') {
-                return new Promise((resolve, reject) => {
+                return new Promise((resolve) => {
                     const reader = new FileReader();
                     reader.onload = function(e) {
-                        try {
-                            const data = new Uint8Array(e.target.result);
-                            const workbook = XLSX.read(data, { type: 'array' });
-                            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                            const csv = XLSX.utils.sheet_to_csv(firstSheet);
-                            const newFile = new File([csv], file.name.replace(/\.[^/.]+$/, '') + '.csv', { type: 'text/csv' });
-                            resolve(newFile);
-                        } catch(err) {
-                            reject(err);
-                        }
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const csv = XLSX.utils.sheet_to_csv(firstSheet);
+                        resolve(new File([csv], file.name.replace(/\.[^/.]+$/, '') + '.csv', { type: 'text/csv' }));
                     };
-                    reader.onerror = () => reject('Ошибка чтения файла');
                     reader.readAsArrayBuffer(file);
                 });
             }
