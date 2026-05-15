@@ -364,15 +364,15 @@
                     <div class="control-group">
                         <label><i class="fas fa-compress"></i> Качество сжатия:</label>
                         <div class="slider-container">
-                            <input type="range" id="compressLevel" min="0" max="100" value="0">
+                            <input type="range" id="compressLevel" min="0" max="100" value="80">
                             <div style="display: flex; justify-content: space-between; margin-top: 5px;">
                                 <span style="font-size: 0.7rem;">Без сжатия</span>
-                                <span class="quality-value" id="compressValue">0%</span>
+                                <span class="quality-value" id="compressValue">80%</span>
                                 <span style="font-size: 0.7rem;">Макс сжатие</span>
                             </div>
                         </div>
                         <div style="margin-top: 8px; font-size: 0.7rem; color: #a0aec0;">
-                            <i class="fas fa-info-circle"></i> Для JPEG/WEBP — сжатие с потерями, для PNG/GIF — без потерь
+                            <i class="fas fa-info-circle"></i> 0% = без сжатия (макс качество), 100% = макс сжатие
                         </div>
                     </div>
                     <div class="control-group">
@@ -601,7 +601,9 @@
             document.getElementById('previewArea').style.display = 'none';
             processedFiles = [];
             const target = document.getElementById('targetFormat').value;
-            const quality = document.getElementById('compressLevel').value / 100;
+            // ИНВЕРТИРУЕМ качество: 0% -> 1.0, 100% -> 0.1
+            const compressValue = parseInt(document.getElementById('compressLevel').value);
+            const quality = 1 - (compressValue / 100 * 0.9);
             const width = document.getElementById('widthInput').value;
             const height = document.getElementById('heightInput').value;
 
@@ -615,7 +617,7 @@
                 else result = files[i];
                 if (result) {
                     processedFiles.push(result);
-                    saveToHistory(files[i], result, currentCategory, { target, quality, width, height });
+                    saveToHistory(files[i], result, currentCategory, { target, compressValue, width, height });
                 }
                 await new Promise(r => setTimeout(r, 10));
             }
@@ -644,8 +646,9 @@
                         canvas.width = tw; canvas.height = th;
                         canvas.getContext('2d').drawImage(img, 0, 0, tw, th);
                         const mime = mimeTypes[target] || 'image/jpeg';
-                        const q = (target === 'jpg' || target === 'jpeg' || target === 'webp') ? (1 - quality * 0.9) : 1;
-                        canvas.toBlob(blob => resolve(new File([blob], file.name.replace(/\.[^/.]+$/, '') + '.' + target, { type: mime })), mime, q);
+                        // Для JPEG и WEBP применяем качество. Для PNG/GIF качество игнорируется
+                        const useQuality = (target === 'jpg' || target === 'jpeg' || target === 'webp') ? quality : 1;
+                        canvas.toBlob(blob => resolve(new File([blob], file.name.replace(/\.[^/.]+$/, '') + '.' + target, { type: mime })), mime, useQuality);
                     };
                     img.src = e.target.result;
                 };
