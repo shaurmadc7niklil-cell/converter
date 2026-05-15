@@ -444,47 +444,11 @@
             'zip':'application/zip'
         };
 
-        // Функция определения категории по расширению файла
-        function detectCategoryByExtension(filename) {
-            const ext = filename.split('.').pop().toLowerCase();
-            if (formats.images.input.includes(ext)) return 'images';
-            if (formats.documents.input.includes(ext)) return 'documents';
-            if (formats.audio.input.includes(ext)) return 'audio';
-            if (formats.archives.input.includes(ext)) return 'archives';
-            return null;
-        }
-
-        // Функция определения категории по MIME-типу
-        function detectCategoryByMime(mimeType) {
-            if (mimeType.startsWith('image/')) return 'images';
-            if (mimeType.startsWith('audio/')) return 'audio';
-            if (mimeType === 'application/pdf') return 'documents';
-            if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return 'documents';
-            if (mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') return 'documents';
-            if (mimeType === 'text/plain') return 'documents';
-            if (mimeType === 'application/zip') return 'archives';
-            if (mimeType === 'application/x-rar-compressed') return 'archives';
-            if (mimeType === 'application/x-7z-compressed') return 'archives';
-            return null;
-        }
-
-        // Автоматическое переключение категории при загрузке файла
-        function autoSwitchCategory(file) {
-            let category = detectCategoryByMime(file.type);
-            if (!category) category = detectCategoryByExtension(file.name);
-            if (!category) return false;
-            
-            // Переключаем активную категорию
-            currentCategory = category;
-            document.querySelectorAll('.category-card').forEach(card => {
-                card.classList.remove('active');
-                if (card.dataset.category === category) {
-                    card.classList.add('active');
-                }
-            });
+        document.addEventListener('DOMContentLoaded', () => {
+            setupEventListeners();
             updateFormatSelectors();
-            return true;
-        }
+            updateHistoryList();
+        });
 
         function setupEventListeners() {
             document.querySelectorAll('.tab').forEach(tab => {
@@ -539,19 +503,9 @@
         }
 
         function addFiles(newFiles) {
-            if (newFiles.length === 0) return;
-            
-            // Определяем категорию по первому файлу
-            const firstFile = newFiles[0];
-            autoSwitchCategory(firstFile);
-            
-            // Фильтруем файлы по текущей категории
             const supported = formats[currentCategory].input;
             const valid = newFiles.filter(f => supported.includes(f.name.split('.').pop().toLowerCase()));
-            if (valid.length === 0) { 
-                showToast('Неподдерживаемый формат для выбранной категории', 'error'); 
-                return; 
-            }
+            if (valid.length === 0) { showToast('Неподдерживаемый формат', 'error'); return; }
             files = [...files, ...valid];
             updateFileList();
             document.getElementById('convertBtn').disabled = false;
