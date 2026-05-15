@@ -519,14 +519,16 @@
                 document.getElementById('compressValue').textContent = e.target.value + '%';
             });
 
-            // Кнопки
+            // Кнопка очистки (сбрасывает всё, включая input)
             document.getElementById('clearBtn').addEventListener('click', () => { 
                 files = []; 
                 processedFiles = []; 
                 updateFileList(); 
                 document.getElementById('previewArea').style.display = 'none'; 
-                document.getElementById('convertBtn').disabled = true; 
+                document.getElementById('convertBtn').disabled = true;
+                document.getElementById('fileInput').value = ''; // СБРАСЫВАЕМ ИНПУТ
             });
+            
             document.getElementById('convertBtn').addEventListener('click', convertFiles);
             document.getElementById('downloadAllBtn').addEventListener('click', downloadAll);
             
@@ -723,7 +725,6 @@
                 const pdfDoc = await PDFDocument.create();
                 const text = await file.text();
                 const page = pdfDoc.addPage([600, 800]);
-                // Обрезаем слишком длинный текст
                 const truncatedText = text.substring(0, 3000);
                 page.drawText(truncatedText, { x: 50, y: 750, size: 12, color: rgb(0,0,0) });
                 const pdfBytes = await pdfDoc.save();
@@ -743,12 +744,11 @@
                 return new File([result.value], file.name.replace(/\.[^/.]+$/, '') + '.txt', { type: 'text/plain' });
             }
             
-            // DOCX -> PDF (используем mammoth для извлечения текста, потом создаём PDF)
+            // DOCX -> PDF
             if (ext === 'docx' && target === 'pdf') {
                 const arrayBuffer = await file.arrayBuffer();
                 const result = await mammoth.extractRawText({ arrayBuffer });
                 const text = result.value;
-                
                 const { PDFDocument, rgb } = PDFLib;
                 const pdfDoc = await PDFDocument.create();
                 const page = pdfDoc.addPage([600, 800]);
