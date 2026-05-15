@@ -430,11 +430,47 @@
             if (saved) conversionHistory = JSON.parse(saved);
         } catch(e) {}
 
+        // Доступные форматы для каждого типа файлов (только то, что реально работает)
         const formats = {
-            images: { input: ['jpg','jpeg','png','gif','bmp','webp'], output: ['jpg','png','webp','gif','bmp'] },
-            documents: { input: ['txt','pdf','docx','xlsx','xls'], output: ['txt','pdf','docx','csv'] },
-            audio: { input: ['mp3','wav','ogg','aac','flac','m4a'], output: ['wav'] },
-            archives: { input: ['zip','rar','7z'], output: ['zip'] }
+            images: { 
+                input: ['jpg','jpeg','png','gif','bmp','webp'], 
+                output: {
+                    'jpg/jpeg': ['png','webp','gif','bmp'],
+                    'png': ['jpg','webp','gif','bmp'],
+                    'webp': ['jpg','png','gif','bmp'],
+                    'gif': ['jpg','png','webp','bmp'],
+                    'bmp': ['jpg','png','webp','gif']
+                }
+            },
+            documents: { 
+                input: ['txt','pdf','docx','xlsx','xls'], 
+                output: {
+                    'txt': ['pdf'],
+                    'pdf': ['txt'],
+                    'docx': ['txt'],
+                    'xlsx': ['csv'],
+                    'xls': ['csv']
+                }
+            },
+            audio: { 
+                input: ['mp3','wav','ogg','aac','flac','m4a'], 
+                output: {
+                    'mp3': ['wav'],
+                    'wav': ['wav'],
+                    'ogg': ['wav'],
+                    'aac': ['wav'],
+                    'flac': ['wav'],
+                    'm4a': ['wav']
+                }
+            },
+            archives: { 
+                input: ['zip','rar','7z'], 
+                output: {
+                    'zip': ['zip'],
+                    'rar': ['zip'],
+                    '7z': ['zip']
+                }
+            }
         };
 
         const mimeTypes = {
@@ -478,8 +514,25 @@
                     card.classList.add('active');
                 }
             });
-            updateFormatSelectors();
             return true;
+        }
+
+        // Получить список форматов для выбранного файла
+        function getAvailableOutputFormats(file) {
+            const ext = file.name.split('.').pop().toLowerCase();
+            const category = detectCategoryByExtension(file.name);
+            if (!category) return [];
+            
+            if (category === 'images') {
+                // Для изображений: все форматы кроме исходного
+                return formats.images.input.filter(f => f !== ext);
+            }
+            
+            // Для документов, аудио, архивов — по таблице
+            if (formats[category] && formats[category].output[ext]) {
+                return formats[category].output[ext];
+            }
+            return [];
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -497,7 +550,13 @@
                     document.querySelectorAll('.category-card').forEach(c => c.classList.remove('active'));
                     card.classList.add('active');
                     currentCategory = card.dataset.category;
-                    updateFormatSelectors();
+                    // При смене категории очищаем файлы
+                    files = [];
+                    processedFiles = [];
+                    updateFileList();
+                    document.getElementById('previewArea').style.display = 'none';
+                    document.getElementById('convertBtn').disabled = true;
+                    updateFormatSelectors(null);
                 });
             });
 
@@ -522,6 +581,7 @@
                 document.getElementById('previewArea').style.display = 'none'; 
                 document.getElementById('convertBtn').disabled = true;
                 document.getElementById('fileInput').value = '';
+                updateFormatSelectors(null);
             });
             
             document.getElementById('convertBtn').addEventListener('click', convertFiles);
@@ -532,14 +592,25 @@
             document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory);
             document.getElementById('exportHistoryBtn').addEventListener('click', exportHistory);
             
-            updateFormatSelectors();
             updateHistoryList();
         });
 
-        function updateFormatSelectors() {
+        function updateFormatSelectors(selectedFile) {
             const targetSelect = document.getElementById('targetFormat');
             targetSelect.innerHTML = '';
-            formats[currentCategory].output.forEach(format => {
+            
+            if (!selectedFile) {
+                targetSelect.innerHTML = '<option value="">Выберите файл</option>';
+                return;
+            }
+            
+            const formatsList = getAvailableOutputFormats(selectedFile);
+            if (formatsList.length === 0) {
+                targetSelect.innerHTML = '<option value="">Нет доступных форматов</option>';
+                return;
+            }
+            
+            formatsList.forEach(format => {
                 const option = document.createElement('option');
                 option.value = format;
                 option.textContent = format.toUpperCase();
@@ -550,24 +621,50 @@
         function addFiles(newFiles) {
             if (newFiles.length === 0) return;
             
+            // Определяем категорию по первому файлу и переключаем
             const firstFile = newFiles[0];
-            autoSwitchCategory(firstFile);
+            const category = detectCategoryByExtension(firstFile.name);
+            if (!category) {
+                showToast('Неподдерживаемый формат файла', 'error');
+                return;
+            }
             
+            // Переключаем категорию
+            currentCategory = category;
+            document.querySelectorAll('.category-card').forEach(card => {
+                card.classList.remove('active');
+                if (card.dataset.category === category) {
+                    card.classList.add('active');
+                }
+            });
+            
+            // Фильтруем файлы по категории
             const supported = formats[currentCategory].input;
             const valid = newFiles.filter(f => supported.includes(f.name.split('.').pop().toLowerCase()));
             if (valid.length === 0) { 
                 showToast('Неподдерживаемый формат для выбранной категории', 'error'); 
                 return; 
             }
+            
             files = [...files, ...valid];
             updateFileList();
             document.getElementById('convertBtn').disabled = false;
+            
+            // Обновляем список форматов для первого файла
+            if (files.length > 0) {
+                updateFormatSelectors(files[0]);
+            }
+            
             showToast(`Добавлено ${valid.length} файлов`, 'success');
         }
 
         function updateFileList() {
             const list = document.getElementById('fileList');
-            if (files.length === 0) { list.style.display = 'none'; return; }
+            if (files.length === 0) { 
+                list.style.display = 'none'; 
+                updateFormatSelectors(null);
+                return; 
+            }
             list.style.display = 'block';
             list.innerHTML = '';
             files.forEach((f, i) => {
@@ -578,20 +675,34 @@
                     </div>
                 `;
             });
+            
+            // Обновляем список форматов для первого файла
+            if (files.length > 0) {
+                updateFormatSelectors(files[0]);
+            }
         }
 
         function getIcon(name) {
             const ext = name.split('.').pop().toLowerCase();
             const icons = { 
-                'jpg':'fa-image','png':'fa-image','webp':'fa-image','gif':'fa-image',
+                'jpg':'fa-image','png':'fa-image','webp':'fa-image','gif':'fa-image','bmp':'fa-image',
                 'mp3':'fa-music','wav':'fa-music','ogg':'fa-music','aac':'fa-music','flac':'fa-music',
-                'pdf':'fa-file-pdf','docx':'fa-file-word','xlsx':'fa-file-excel',
+                'pdf':'fa-file-pdf','docx':'fa-file-word','xlsx':'fa-file-excel','xls':'fa-file-excel','txt':'fa-file-lines',
                 'zip':'fa-file-archive','rar':'fa-file-archive','7z':'fa-file-archive'
             };
             return icons[ext] || 'fa-file';
         }
 
-        window.removeFile = (i) => { files.splice(i,1); updateFileList(); if(files.length===0) document.getElementById('convertBtn').disabled = true; };
+        window.removeFile = (i) => { 
+            files.splice(i,1); 
+            updateFileList(); 
+            if(files.length === 0) {
+                document.getElementById('convertBtn').disabled = true;
+                updateFormatSelectors(null);
+            } else {
+                updateFormatSelectors(files[0]);
+            }
+        };
 
         async function convertFiles() {
             if (isProcessing || files.length === 0) return;
@@ -601,21 +712,28 @@
             document.getElementById('previewArea').style.display = 'none';
             processedFiles = [];
             const target = document.getElementById('targetFormat').value;
-            
             const compressValue = parseInt(document.getElementById('compressLevel').value);
             const quality = 1 - (compressValue / 100 * 0.9);
-            
             const width = document.getElementById('widthInput').value;
             const height = document.getElementById('heightInput').value;
 
             for (let i = 0; i < files.length; i++) {
                 document.getElementById('progressFill').style.width = `${((i+1)/files.length)*100}%`;
                 let result;
-                if (currentCategory === 'images') result = await convertImage(files[i], target, quality, width, height);
-                else if (currentCategory === 'audio') result = await convertAudio(files[i], target);
-                else if (currentCategory === 'documents') result = await convertDocument(files[i], target);
-                else if (currentCategory === 'archives') result = await convertArchive(files[i], target);
-                else result = files[i];
+                const ext = files[i].name.split('.').pop().toLowerCase();
+                
+                if (currentCategory === 'images') {
+                    result = await convertImage(files[i], target, quality, width, height);
+                } else if (currentCategory === 'audio') {
+                    result = await convertAudio(files[i], target);
+                } else if (currentCategory === 'documents') {
+                    result = await convertDocument(files[i], target, ext);
+                } else if (currentCategory === 'archives') {
+                    result = await convertArchive(files[i], target);
+                } else {
+                    result = files[i];
+                }
+                
                 if (result) {
                     processedFiles.push(result);
                     saveToHistory(files[i], result, currentCategory, { target, compressValue, width, height });
@@ -714,9 +832,7 @@
             }
         }
 
-        async function convertDocument(file, target) {
-            const ext = file.name.split('.').pop().toLowerCase();
-            
+        async function convertDocument(file, target, ext) {
             // TXT -> PDF
             if (ext === 'txt' && target === 'pdf') {
                 try {
@@ -747,7 +863,7 @@
                 return new File([result.value], file.name.replace(/\.[^/.]+$/, '') + '.txt', { type: 'text/plain' });
             }
             
-            // XLSX -> CSV
+            // XLSX/XLXS -> CSV
             if ((ext === 'xlsx' || ext === 'xls') && target === 'csv') {
                 return new Promise((resolve) => {
                     const reader = new FileReader();
