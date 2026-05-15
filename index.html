@@ -602,7 +602,6 @@
             processedFiles = [];
             const target = document.getElementById('targetFormat').value;
             
-            // ИНВЕРСИЯ: 0% -> качество 1.0 (без сжатия), 100% -> качество 0.1 (макс сжатие)
             const compressValue = parseInt(document.getElementById('compressLevel').value);
             const quality = 1 - (compressValue / 100 * 0.9);
             
@@ -648,7 +647,6 @@
                         canvas.width = tw; canvas.height = th;
                         canvas.getContext('2d').drawImage(img, 0, 0, tw, th);
                         const mime = mimeTypes[target] || 'image/jpeg';
-                        // Для JPEG и WEBP применяем качество, для PNG/GIF качество не используется (сжатие без потерь)
                         const useQuality = (target === 'jpg' || target === 'jpeg' || target === 'webp') ? quality : 1;
                         canvas.toBlob(blob => resolve(new File([blob], file.name.replace(/\.[^/.]+$/, '') + '.' + target, { type: mime })), mime, useQuality);
                     };
@@ -721,14 +719,19 @@
             
             // TXT -> PDF
             if (ext === 'txt' && target === 'pdf') {
-                const { PDFDocument, rgb } = PDFLib;
-                const pdfDoc = await PDFDocument.create();
-                const text = await file.text();
-                const page = pdfDoc.addPage([600, 800]);
-                const truncatedText = text.substring(0, 3000);
-                page.drawText(truncatedText, { x: 50, y: 750, size: 12, color: rgb(0,0,0) });
-                const pdfBytes = await pdfDoc.save();
-                return new File([pdfBytes], file.name.replace('.txt','.pdf'), { type: 'application/pdf' });
+                try {
+                    const { PDFDocument, rgb } = PDFLib;
+                    const pdfDoc = await PDFDocument.create();
+                    const text = await file.text();
+                    const page = pdfDoc.addPage([600, 800]);
+                    const truncatedText = text.substring(0, 3000);
+                    page.drawText(truncatedText, { x: 50, y: 750, size: 12 });
+                    const pdfBytes = await pdfDoc.save();
+                    return new File([pdfBytes], file.name.replace('.txt','.pdf'), { type: 'application/pdf' });
+                } catch(e) {
+                    console.error('TXT to PDF error:', e);
+                    return file;
+                }
             }
             
             // PDF -> TXT
